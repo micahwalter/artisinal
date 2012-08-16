@@ -1,23 +1,21 @@
 <?php
+
 /**
  * @file
- * Adds unique artisinal integers to nodes.
+ * Defines an artisinal field type.
  */
 
 /**
- * Implements hook_help.
- *
- * @param path 
- *   Which path of the site we're using to display help
- * @param arg 
- *   Array that holds the current path as returned from arg() function
+ * Implements hook_help().
  */
 function artisinal_help($path, $arg) {
-	switch ($path) {
-	    case "admin/help#artisinal":
-	      return '<p>'.  t("Adds unique artisinal integers to nodes") .'</p>';
-	      break;
-	  }
+  switch ($path) {
+    case 'admin/help#artisinal':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('The Artisinal module defines and artisinal integer field type for the Field module. Numbers are crafted from <a href="http://brooklynintegers.com">Brooklyn Integers</a> or <a href="http://missionintegers.com">Mission Integers</a>. See the <a href="@field-help">Field module help page</a> for more information about fields.', array('@field-help' => url('admin/help/field'))) . '</p>';
+      return $output;
+  }
 }
 
 /**
@@ -27,34 +25,71 @@ function artisinal_field_info() {
   return array(
     'artisinal_integer' => array(
       'label' => t('Artisinal Integer'),
-      'description' => t('This field stores a unique artisinal number in the database as an integer.'),
+      'description' => t('This field stores a handcrafted artisinal number in the database as an integer.'),
+      'settings' => array('provider' => 'Brooklyn Integers'),
+      'instance_settings' => array('prefix' => '', 'suffix' => ''),
       'default_widget' => 'artisinal',
       'default_formatter' => 'artisinal_integer',
     ),
   );
 }
 
-
 /**
  * Implements hook_field_settings_form().
- * There are currently no field settings for this.
  */
 function artisinal_field_settings_form($field, $instance, $has_data) {
   $settings = $field['settings'];
   $form = array();
+
+  if ($field['type'] == 'artisinal_integer') {
+	$form['provider'] = array(
+		'#type' => 'select',
+		'#title' => t('Artisinal Integer Provider'),
+		'#options' => array(0 => t('Brooklyn Integers'), 1 => t('Mission Integers'), 2=> t('Both')),
+		'#default_value' => $settings['provider'],
+		'#description' => t('Please select an artisinal integer provider or choose both for a load balanced experience'),
+	);
+  }
 
   return $form;
 }
 
 /**
  * Implements hook_field_instance_settings_form().
- * This does nothing for the moment
  */
 function artisinal_field_instance_settings_form($field, $instance) {
   $settings = $instance['settings'];
-  $form = array();
+
+  $form['prefix'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Prefix'),
+    '#default_value' => $settings['prefix'],
+    '#size' => 60,
+    '#description' => t("Define a string that should be prefixed to the value, like '$ ' or '&euro; '. Leave blank for none. Separate singular and plural values with a pipe ('pound|pounds')."),
+  );
+  $form['suffix'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Suffix'),
+    '#default_value' => $settings['suffix'],
+    '#size' => 60,
+    '#description' => t("Define a string that should be suffixed to the value, like ' m', ' kb/s'. Leave blank for none. Separate singular and plural values with a pipe ('pound|pounds')."),
+  );
 
   return $form;
+}
+
+/**
+ * Implements hook_field_validate().
+ */
+function artisinal_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors) {
+
+}
+
+/**
+ * Implements hook_field_presave().
+ */
+function artisinal_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
+ 
 }
 
 /**
@@ -76,12 +111,81 @@ function artisinal_field_formatter_info() {
       'label' => t('Default'),
       'field types' => array('artisinal_integer'),
       'settings' =>  array(
-        'scale' => 0,
+        'prefix_suffix' => TRUE,
       ),
+    ),
+    'artisinal_unformatted' => array(
+      'label' => t('Unformatted'),
+      'field types' => array('artisinal_integer'),
     ),
   );
 }
 
+/**
+ * Implements hook_field_formatter_settings_form().
+ */
+function artisinal_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+
+  if ($display['type'] == 'artisinal_integer') {
+    
+	$element['prefix_suffix'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Display prefix and suffix.'),
+      '#default_value' => $settings['prefix_suffix'],
+    );
+  }
+
+  return $element;
+}
+
+/**
+ * Implements hook_field_formatter_settings_summary().
+ */
+function artisinal_field_formatter_settings_summary($field, $instance, $view_mode) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+
+  $summary = array();
+    if ($settings['prefix_suffix']) {
+      $summary[] = t('Display with prefix and suffix.');
+    }
+
+  return implode('<br />', $summary);
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function artisinal_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+  $settings = $display['settings'];
+
+  switch ($display['type']) {
+    case 'artisinal_integer':
+      foreach ($items as $delta => $item) {
+        $output = $item['value'];
+        if ($settings['prefix_suffix']) {
+          $prefixes = isset($instance['settings']['prefix']) ? array_map('field_filter_xss', explode('|', $instance['settings']['prefix'])) : array('');
+          $suffixes = isset($instance['settings']['suffix']) ? array_map('field_filter_xss', explode('|', $instance['settings']['suffix'])) : array('');
+          $prefix = (count($prefixes) > 1) ? format_plural($item['value'], $prefixes[0], $prefixes[1]) : $prefixes[0];
+          $suffix = (count($suffixes) > 1) ? format_plural($item['value'], $suffixes[0], $suffixes[1]) : $suffixes[0];
+          $output = $prefix . $output . $suffix;
+        }
+        $element[$delta] = array('#markup' => $output);
+      }
+      break;
+
+    case 'artisinal_unformatted':
+      foreach ($items as $delta => $item) {
+        $element[$delta] = array('#markup' => $item['value']);
+      }
+      break;
+  }
+
+  return $element;
+}
 
 /**
  * Implements hook_field_widget_info().
@@ -95,6 +199,59 @@ function artisinal_field_widget_info() {
   );
 }
 
+/**
+ * Implements hook_field_widget_form().
+ */
+function artisinal_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+  $value = isset($items[$delta]['value']) ? $items[$delta]['value'] : '';
+  
+  $element += array(
+    '#type' => 'textfield',
+    '#default_value' => $value,
+    '#artisinal_type' => str_replace('artisinal_', '', $field['type']),
+  );
+
+  // Add prefix and suffix.
+  if (!empty($instance['settings']['prefix'])) {
+    $prefixes = explode('|', $instance['settings']['prefix']);
+    $element['#field_prefix'] = field_filter_xss(array_pop($prefixes));
+  }
+  if (!empty($instance['settings']['suffix'])) {
+    $suffixes = explode('|', $instance['settings']['suffix']);
+    $element['#field_suffix'] = field_filter_xss(array_pop($suffixes));
+  }
+
+  $element['#element_validate'][] = 'artisinal_field_widget_validate';
+
+  return array('value' => $element);
+}
+
+/**
+ * FAPI validation of an individual number element.
+ */
+function artisinal_field_widget_validate($element, &$form_state) {
+  $field = field_widget_field($element, $form_state);
+  $instance = field_widget_instance($element, $form_state);
+
+  $type = $element['#artisinal_type'];
+  $value = $element['#value'];
+
+  // Reject invalid characters.
+  if (!empty($value)) {
+    switch ($type) {
+      case 'integer':
+        $regexp = '@([^-0-9])|(.-)@';
+        $message = t('Only numbers are allowed in %field.', array('%field' => $instance['label']));
+        break;
+    }
+    if ($value != preg_replace($regexp, '', $value)) {
+      form_error($element, $message);
+    }
+    else {
+      form_set_value($element, $value, $form_state);
+    }
+  }
+}
 
 /**
  * Implements hook_field_widget_error().
