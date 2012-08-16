@@ -4,11 +4,8 @@
  * Adds unique artisinal integers to nodes.
  */
 
-
 /**
  * Implements hook_help.
- *
- * Displays help and module information.
  *
  * @param path 
  *   Which path of the site we're using to display help
@@ -24,33 +21,84 @@ function artisinal_help($path, $arg) {
 }
 
 /**
- * Implements hook_permission().
+ * Implements hook_field_info().
  */
-function artisinal_permission() {
+function artisinal_field_info() {
   return array(
-    'administer artisinal' => array(
-      'title' => t('Administer Artisinal integers'),
-      'description' => t('Perform administrative actions with Artisinal integers.'),
-    ),
-    'view artisinal integers' => array(
-      'title' => t('View Artisinal integers'),
-      'description' => t('Allows access to view Artisinal integers.')
+    'artisinal_integer' => array(
+      'label' => t('Artisinal Integer'),
+      'description' => t('This field stores a unique artisinal number in the database as an integer.'),
+      'default_widget' => 'artisinal',
+      'default_formatter' => 'artisinal_integer',
     ),
   );
 }
 
+
 /**
- * Implements hook_menu().
+ * Implements hook_field_settings_form().
+ * There are currently no field settings for this.
  */
-function artisinal_menu() {
-  $items = array();
-  $items['admin/config/system/artisinal'] = array(
-    'title' => 'Artisinal Integers',
-    'description' => 'Provides configuration options for Artisinal integers.',
-    'access arguments' => array('administer artisinal'),
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('artisinal_admin_settings'),
-    'file' => 'artisinal.admin.inc',
+function artisinal_field_settings_form($field, $instance, $has_data) {
+  $settings = $field['settings'];
+  $form = array();
+
+  return $form;
+}
+
+/**
+ * Implements hook_field_instance_settings_form().
+ * This does nothing for the moment
+ */
+function artisinal_field_instance_settings_form($field, $instance) {
+  $settings = $instance['settings'];
+  $form = array();
+
+  return $form;
+}
+
+/**
+ * Implements hook_field_is_empty().
+ */
+function artisinal_field_is_empty($item, $field) {
+  if (empty($item['value']) && (string) $item['value'] !== '0') {
+    return TRUE;
+  }
+  return FALSE;
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function artisinal_field_formatter_info() {
+  return array(
+    'artisinal_integer' => array(
+      'label' => t('Default'),
+      'field types' => array('artisinal_integer'),
+      'settings' =>  array(
+        'scale' => 0,
+      ),
+    ),
   );
-  return $items;
+}
+
+
+/**
+ * Implements hook_field_widget_info().
+ */
+function artisinal_field_widget_info() {
+  return array(
+    'artisinal' => array(
+      'label' => t('Text field'),
+      'field types' => array('artisinal_integer'),
+    ),
+  );
+}
+
+
+/**
+ * Implements hook_field_widget_error().
+ */
+function artisinal_field_widget_error($element, $error, $form, &$form_state) {
+  form_error($element['value'], $error['message']);
 }

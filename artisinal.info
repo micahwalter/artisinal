@@ -2,4 +2,4 @@ name = Artisinial
 description = Adds unique artisinal integers to nodes.
 core = 7.x
 
-configure = admin/config/system/artisinal
+dependencies[] = field
