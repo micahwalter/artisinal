@@ -6,7 +6,7 @@
  */
 
 /**
- * Menu callback; Displays the administration settings for Disqus.
+ * Menu callback; Displays the administration settings for Artisinal Integers.
  */
 function artisinal_admin_settings() {
   $form = array();
