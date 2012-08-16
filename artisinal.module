@@ -207,7 +207,7 @@ function artisinal_field_widget_form(&$form, &$form_state, $field, $instance, $l
   
   $element += array(
     '#type' => 'textfield',
-    '#default_value' => $value,
+    '#default_value' => get_artisinal_integer($value),
     '#artisinal_type' => str_replace('artisinal_', '', $field['type']),
   );
 
@@ -224,6 +224,25 @@ function artisinal_field_widget_form(&$form, &$form_state, $field, $instance, $l
   $element['#element_validate'][] = 'artisinal_field_widget_validate';
 
   return array('value' => $element);
+}
+
+function get_artisinal_integer($value) {
+
+	if (!empty($value)) {
+		return $value;
+	}
+	else {
+		$options = array(CURLOPT_POSTFIELDS => 'method=brooklyn.integers.create');
+		$ch = curl_init('http://api.brooklynintegers.com/rest/');
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+		curl_setopt_array($ch, $options);
+		$json = curl_exec($ch);
+		curl_close($ch);
+	
+		$obj = json_decode($json);
+		
+		return $obj->{'integer'};
+	}
 }
 
 /**
@@ -251,6 +270,14 @@ function artisinal_field_widget_validate($element, &$form_state) {
       form_set_value($element, $value, $form_state);
     }
   }
+}
+
+/**
+ * Implements the hook_cron
+ *
+ */
+function artisinal_field_cron() {
+	
 }
 
 /**
