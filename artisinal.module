@@ -1,0 +1,56 @@
+<?php
+/**
+ * @file
+ * Adds unique artisinal integers to nodes.
+ */
+
+
+/**
+ * Implements hook_help.
+ *
+ * Displays help and module information.
+ *
+ * @param path 
+ *   Which path of the site we're using to display help
+ * @param arg 
+ *   Array that holds the current path as returned from arg() function
+ */
+function artisinal_help($path, $arg) {
+	switch ($path) {
+	    case "admin/help#artisinal":
+	      return '<p>'.  t("Adds unique artisinal integers to nodes") .'</p>';
+	      break;
+	  }
+}
+
+/**
+ * Implements hook_permission().
+ */
+function artisinal_permission() {
+  return array(
+    'administer artisinal' => array(
+      'title' => t('Administer Artisinal integers'),
+      'description' => t('Perform administrative actions with Artisinal integers.'),
+    ),
+    'view artisinal integers' => array(
+      'title' => t('View Artisinal integers'),
+      'description' => t('Allows access to view Artisinal integers.')
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function artisinal_menu() {
+  $items = array();
+  $items['admin/config/system/artisinal'] = array(
+    'title' => 'Artisinal Integers',
+    'description' => 'Provides configuration options for Artisinal integers.',
+    'access arguments' => array('administer artisinal'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('artisinal_admin_settings'),
+    'file' => 'artisinal.admin.inc',
+  );
+  return $items;
+}
