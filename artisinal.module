@@ -227,9 +227,10 @@ function artisinal_field_widget_form(&$form, &$form_state, $field, $instance, $l
 }
 
 function get_artisinal_integer($value) {
-
-	if (!empty($value)) {
-		return $value;
+	
+	// should check if value is artisinal
+	if (is_artisinal($value) == TRUE ) {	
+			return $value;
 	}
 	else {
 		$options = array(CURLOPT_POSTFIELDS => 'method=brooklyn.integers.create');
@@ -243,6 +244,29 @@ function get_artisinal_integer($value) {
 		
 		return $obj->{'integer'};
 	}
+}
+
+function is_artisinal($value) {
+	
+	if (!empty($value) ) {
+		$ch = curl_init();
+	
+		$qry_str = "http://api.brooklynintegers.com/rest/?method=brooklyn.integers.isArtisinal&integer=" . $value;
+		$ch = curl_init($qry_str);
+	
+		curl_setopt($ch, CURLOPT_HEADER, 0);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		$output = curl_exec($ch);       
+		curl_close($ch);
+	
+		$obj = json_decode($output);
+		$is_artisinal = $obj->{'is_artisinal'};
+	
+		if ( $is_artisinal == 1 )	
+			return TRUE;
+	}
+	else
+		return FALSE;
 }
 
 /**
